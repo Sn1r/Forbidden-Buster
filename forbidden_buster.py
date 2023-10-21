@@ -144,7 +144,7 @@ def generate_path_variants(path):
 
 @rate_limit(rate_limit_value)
 def perform_path_bypass(url, path, args, user_method):
-    print(f"\n{YELLOW}[INFO] Trying to bypass with path...{RESET}")
+    print(f"\n{YELLOW}[INFO] Trying to bypass with path fuzzing...{RESET}")
 
     base_url = url
 
