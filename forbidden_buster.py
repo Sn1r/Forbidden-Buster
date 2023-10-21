@@ -57,7 +57,7 @@ def print_banner():
 
 @rate_limit(rate_limit_value)
 def perform_headers_bypass(url, args, headers_bypass, method_bypass):
-    print(f"{YELLOW}[INFO] Trying to bypass headers...{RESET}")
+    print(f"{YELLOW}[INFO] Trying to bypass with headers...{RESET}")
     for header_key, header_value in headers_bypass.items():
         if args.method:
             user_method = args.method.upper()
@@ -93,7 +93,7 @@ def perform_headers_bypass(url, args, headers_bypass, method_bypass):
         
 @rate_limit(rate_limit_value)
 def perform_method_bypass(url, args, headers_bypass, method_bypass):
-    print(f"\n{YELLOW}[INFO] Trying to bypass HTTP methods...{RESET}")
+    print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP methods...{RESET}")
     for method in method_bypass:
         if args.method:
             user_method = args.method.upper()
@@ -144,7 +144,7 @@ def generate_path_variants(path):
 
 @rate_limit(rate_limit_value)
 def perform_path_bypass(url, path, args, user_method):
-    print(f"\n{YELLOW}[INFO] Trying to bypass path...{RESET}")
+    print(f"\n{YELLOW}[INFO] Trying to bypass with path...{RESET}")
 
     base_url = url
 
@@ -228,7 +228,7 @@ def perform_unicode_bypass(url, path, user_method, args):
 
 @rate_limit(rate_limit_value)
 def perform_user_agent_bypass(url, args):
-    print(f"{YELLOW}\n[INFO] Trying to bypass User-Agent headers...{RESET}")
+    print(f"{YELLOW}\n[INFO] Trying to bypass with User-Agent fuzzing...{RESET}")
     if not url.startswith("http"):
         url = "http://" + url
 
@@ -254,7 +254,7 @@ def perform_user_agent_bypass(url, args):
 
 @rate_limit(rate_limit_value)
 def perform_protocol_bypass(url, user_method, args):
-    print(f"\n{YELLOW}[INFO] Trying to bypass protocols...{RESET}")
+    print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP protocols...{RESET}")
 
     base_url = url
 
@@ -315,11 +315,11 @@ def validate_url(url):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--url", help="Full path to be used", required=True, nargs=1)
-    parser.add_argument("-m", "--method", help="method to be used. default is GET")
-    parser.add_argument("-p", "--proxy", help="use proxy")
+    parser.add_argument("-m", "--method", help="Method to be used. Default is GET")
+    parser.add_argument("-p", "--proxy", help="Use Proxy")
     parser.add_argument("--rate-limit", type=int, default=10, help="Rate limit (calls per second)")
-    parser.add_argument("--include-unicode", action="store_true", help="Include Unicode bypass (stressful)")
-    parser.add_argument("--include-user-agent", action="store_true", help="Include User-Agent bypass (stressful)")
+    parser.add_argument("--include-unicode", action="store_true", help="Include Unicode fuzzing (stressful)")
+    parser.add_argument("--include-user-agent", action="store_true", help="Include User-Agent fuzzing (stressful)")
     
     args = parser.parse_args()
     global rate_limit_value
