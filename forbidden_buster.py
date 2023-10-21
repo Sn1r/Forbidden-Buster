@@ -182,7 +182,7 @@ def perform_unicode_bypass(url, path, user_method, args):
 
     base_url = url.rstrip('/')
 
-    with open('./wordlists/unicode.txt', 'r') as file:
+    with open('./wordlists/Unicode.txt', 'r') as file:
         fuzz_strings = file.read().splitlines()
 
     for fuzz_string in fuzz_strings:
