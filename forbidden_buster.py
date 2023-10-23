@@ -27,8 +27,7 @@ def rate_limit(calls_per_second):
     
     def decorator(func):
         last_time = [0.0]
-
-        @functools.wraps(func)
+        
         def wrapper(*args, **kwargs):
             nonlocal last_time
             elapsed_time = time.time() - last_time[0]
@@ -37,6 +36,9 @@ def rate_limit(calls_per_second):
             result = func(*args, **kwargs)
             last_time[0] = time.time()
             return result
+
+        wrapper.__name__ = func.__name__
+        wrapper.__doc__ = func.__doc__
 
         return wrapper
 
@@ -56,43 +58,43 @@ def print_banner():
         """)
 
 @rate_limit(rate_limit_value)
-def perform_headers_bypass(url, args, headers_bypass, method_bypass):
+def perform_headers_bypass(url, args, headers_bypass, custom_headers=None):
     print(f"{YELLOW}[INFO] Trying to bypass with headers...{RESET}")
-    for header_key, header_value in headers_bypass.items():
-        if args.method:
+    if args.method:
             user_method = args.method.upper()
+    else:
+        user_method = "GET"   
+
+    for header_key, header_value in headers_bypass.items():
+        headers = {}
+        if custom_headers is not None:
+            headers.update(custom_headers)
+
+        headers[header_key] = header_value
+
+        if user_method == "POST":
+            r = requests.post(url, headers=headers, verify=False, allow_redirects=False)
+        elif user_method == "PUT":
+            r = requests.put(url, headers=headers, verify=False, allow_redirects=False)
+        elif user_method == "DELETE":
+            r = requests.delete(url, headers=headers, verify=False, allow_redirects=False)
         else:
-            user_method = "GET"  
-        for method in method_bypass:
-            if user_method == method:
-                continue  
+            r = requests.get(url, headers=headers, verify=False, allow_redirects=False)
+        
+        if args.proxy:
+            r = requests.request(user_method, url, headers=headers, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
 
-            if not url.startswith("http"):
-                url = "http://" + url 
-
-            if method == "POST":
-                r = requests.post(url, headers={header_key: header_value}, verify=False, allow_redirects=False)
-            elif method == "PUT":
-                r = requests.put(url, headers={header_key: header_value}, verify=False, allow_redirects=False)
-            elif method == "DELETE":
-                r = requests.delete(url, headers={header_key: header_value}, verify=False, allow_redirects=False)
-            else:
-                r = requests.get(url, headers={header_key: header_value}, verify=False, allow_redirects=False)
-            
-            if args.proxy:
-                r = requests.request(method, url, headers={header_key: header_value}, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
-
-            status_code = r.status_code
-            if status_code == 200:
-                status_color = GREEN
-            elif status_code in (401,403):
-                status_color = RED
-            else:
-                status_color = RESET
-            print(f"{status_color}{method} {url} with header {header_key}: {status_code}{RESET}")
+        status_code = r.status_code
+        if status_code == 200:
+            status_color = GREEN
+        elif status_code in (401,403):
+            status_color = RED
+        else:
+            status_color = RESET
+        print(f"{status_color}{user_method} {url} with header {header_key}: {status_code}{RESET}")
         
 @rate_limit(rate_limit_value)
-def perform_method_bypass(url, args, headers_bypass, method_bypass):
+def perform_method_bypass(url, args, headers_bypass, method_bypass, custom_headers=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP methods...{RESET}")
     for method in method_bypass:
         if args.method:
@@ -102,20 +104,24 @@ def perform_method_bypass(url, args, headers_bypass, method_bypass):
         if user_method == method:
             continue 
 
+        headers = {}
+        if custom_headers is not None:
+            headers.update(custom_headers)
+
         if not url.startswith("http"):
             url = "http://" + url  
 
         if method == "POST":
-            r = requests.post(url, verify=False, allow_redirects=False)
+            r = requests.post(url, verify=False, headers=headers, allow_redirects=False)
         elif method == "PUT":
-            r = requests.put(url, verify=False, allow_redirects=False)
+            r = requests.put(url, verify=False, headers=headers,allow_redirects=False)
         elif method == "DELETE":
-            r = requests.delete(url, verify=False, allow_redirects=False)
+            r = requests.delete(url, verify=False, headers=headers, allow_redirects=False)
         else:
-            r = requests.get(url, verify=False, allow_redirects=False)
+            r = requests.get(url, verify=False, headers=headers, allow_redirects=False)
         
         if args.proxy:
-            r = requests.request(method, url, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
+            r = requests.request(method, url, proxies={"http": args.proxy, "https": args.proxy}, headers=headers, verify=False, allow_redirects=False)
 
         status_code = r.status_code
         if status_code == 200:
@@ -143,7 +149,7 @@ def generate_path_variants(path):
     return paths
 
 @rate_limit(rate_limit_value)
-def perform_path_bypass(url, path, args, user_method):
+def perform_path_bypass(url, path, args, user_method, custom_headers=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with path fuzzing...{RESET}")
 
     base_url = url
@@ -154,18 +160,22 @@ def perform_path_bypass(url, path, args, user_method):
         parsed_url = urlparse(urljoin(base_url, path_variant))
         parsed_url._replace(path=parsed_url.path.lstrip('/'))
         request_url = urlunparse(parsed_url._replace(path=path_variant))
+
+        headers = {}
+        if custom_headers is not None:
+            headers.update(custom_headers)
         
         if user_method == "POST":
-            r = requests.post(request_url, verify=False, allow_redirects=False)
+            r = requests.post(request_url, verify=False, headers=headers, allow_redirects=False)
         elif user_method == "PUT":
-            r = requests.put(request_url, verify=False, allow_redirects=False)
+            r = requests.put(request_url, verify=False, headers=headers, allow_redirects=False)
         elif user_method == "DELETE":
-            r = requests.delete(request_url, verify=False, allow_redirects=False)
+            r = requests.delete(request_url, verify=False, headers=headers, allow_redirects=False)
         else:
-            r = requests.get(request_url, verify=False, allow_redirects=False)
+            r = requests.get(request_url, verify=False, headers=headers, allow_redirects=False)
 
         if args.proxy:
-            r = requests.request(user_method, request_url, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
+            r = requests.request(user_method, request_url, headers=headers, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
         
         status_code = r.status_code
         if status_code == 200:
@@ -253,7 +263,7 @@ def perform_user_agent_bypass(url, args):
         print(f"{status_color}User-Agent: {user_agent} - Status Code: {r.status_code}{RESET}")
 
 @rate_limit(rate_limit_value)
-def perform_protocol_bypass(url, user_method, args):
+def perform_protocol_bypass(url, user_method, args, custom_headers=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP protocols...{RESET}")
 
     base_url = url
@@ -270,6 +280,12 @@ def perform_protocol_bypass(url, user_method, args):
         parsed_url = urlparse(url)
         host = parsed_url.netloc
         path = parsed_url.path
+
+        headers = {"Host": host}
+
+        if custom_headers:
+            headers.update(custom_headers)
+
         try:
             if args.proxy:
                 proxy_url = urlparse(args.proxy)
@@ -277,14 +293,12 @@ def perform_protocol_bypass(url, user_method, args):
                 conn._http_vsn_str = version
                 conn._http_vsn = int(version[5])
                 request_line = f"{user_method} {url}"
-                headers = {"Host": host}
                 conn.set_tunnel(host, headers=headers)
             else:
                 conn = http.client.HTTPConnection(host)
                 conn._http_vsn_str = version
                 conn._http_vsn = int(version[5])
                 request_line = f"{user_method} {path}"
-                headers = {"Host": host}
 
             conn.request(user_method, path, headers=headers)
             response = conn.getresponse()
@@ -292,12 +306,12 @@ def perform_protocol_bypass(url, user_method, args):
 
             if response.status == 200:
                 status_color = GREEN
-            elif response.status in (401,403):
+            elif response.status in (401, 403):
                 status_color = RED
             else:
                 status_color = RESET
             print(f"{status_color}{version} {user_method} {url}: {response.status}{RESET}")
-        
+
         except http.client.BadStatusLine as e:
             print(f"{RED}[ERROR] Bad Status Line: {e}{RESET}")
             continue
@@ -316,6 +330,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--url", help="Full path to be used", required=True, nargs=1)
     parser.add_argument("-m", "--method", help="Method to be used. Default is GET")
+    parser.add_argument("-a", "--headers", action="append", help="Add custom headers")
     parser.add_argument("-p", "--proxy", help="Use Proxy")
     parser.add_argument("--rate-limit", type=int, default=10, help="Rate limit (calls per second)")
     parser.add_argument("--include-unicode", action="store_true", help="Include Unicode fuzzing (stressful)")
@@ -324,6 +339,18 @@ def main():
     args = parser.parse_args()
     global rate_limit_value
     rate_limit_value = args.rate_limit
+
+    custom_headers = None
+
+    if args.headers is not None:
+        custom_headers = {}
+        for header in args.headers:
+            key_value = header.split(':')
+            if len(key_value) == 2:
+                key, value = key_value
+                custom_headers[key.strip()] = value.strip()
+            else:
+                print(f"\n{YELLOW}[WARNING] Invalid header format: {header}. Skipping...{RESET}\n")
 
     try:
         headers_bypass = {
@@ -353,17 +380,17 @@ def main():
             path = url_parts.path
 
             
-            perform_headers_bypass(url, args, headers_bypass, method_bypass)
-            perform_method_bypass(url, args, headers_bypass, method_bypass)
-            perform_path_bypass(url, path, args, user_method)
-            perform_protocol_bypass(url, user_method, args)
+            perform_headers_bypass(url, args, headers_bypass, custom_headers)
+            perform_method_bypass(url, args, headers_bypass, method_bypass, custom_headers)
+            perform_path_bypass(url, path, args, user_method, custom_headers)
+            perform_protocol_bypass(url, user_method, args, custom_headers)
             
             if args.include_unicode:
                 perform_unicode_bypass(url, path, user_method, args)
 
             if args.include_user_agent:
                 perform_user_agent_bypass(url, args)
-            
+
             
             print(f"{GREEN}\n[+] Done. you may review the results{RESET}")
 
