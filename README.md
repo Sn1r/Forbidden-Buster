@@ -27,6 +27,7 @@ Forbidden Buster accepts the following arguments:
 ```bash
 -u, --url: Full path to be used. This argument is required.
 -m, --method: Method to be used. The default is GET.
+-a, --headers: Add custom headers.
 -p, --proxy: Use a proxy.
 --rate-limit: Set the rate limit (calls per second). The default rate limit is 10.
 --include-unicode: Include Unicode bypass (stressful).
