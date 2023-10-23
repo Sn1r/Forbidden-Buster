@@ -187,8 +187,12 @@ def perform_path_bypass(url, path, args, user_method, custom_headers=None):
         print(f"{status_color}{user_method} {request_url}: {r.status_code}{RESET}")
 
 @rate_limit(rate_limit_value)
-def perform_unicode_bypass(url, path, user_method, args):
+def perform_unicode_bypass(url, path, user_method, args, custom_headers=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass path with unicode fuzzing...{RESET}")
+
+    headers = {}
+    if custom_headers is not None:
+        headers.update(custom_headers)
 
     base_url = url.rstrip('/')
 
@@ -208,24 +212,24 @@ def perform_unicode_bypass(url, path, user_method, args):
 
             if user_method == "POST":
                 if args.proxy:
-                    r = requests.post(request_url, verify=False, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
+                    r = requests.post(request_url, verify=False, allow_redirects=False, headers=headers, proxies={"http": args.proxy, "https": args.proxy})
                 else:
-                    r = requests.post(request_url, verify=False, allow_redirects=False)
+                    r = requests.post(request_url, verify=False, headers=headers, allow_redirects=False)
             elif user_method == "PUT":
                 if args.proxy:
-                    r = requests.put(request_url, verify=False, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
+                    r = requests.put(request_url, verify=False, headers=headers, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
                 else:
-                    r = requests.put(request_url, verify=False, allow_redirects=False)
+                    r = requests.put(request_url, verify=False, headers=headers, allow_redirects=False)
             elif user_method == "DELETE":
                 if args.proxy:
-                    r = requests.delete(request_url, verify=False, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
+                    r = requests.delete(request_url, verify=False, headers=headers, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
                 else:
-                    r = requests.delete(request_url, verify=False, allow_redirects=False)
+                    r = requests.delete(request_url, verify=False, headers=headers, allow_redirects=False)
             else:
                 if args.proxy:
-                    r = requests.get(request_url, verify=False, allow_redirects=False, proxies={"http": args.proxy, "https": args.proxy})
+                    r = requests.get(request_url, verify=False, allow_redirects=False, headers=headers, proxies={"http": args.proxy, "https": args.proxy})
                 else:
-                    r = requests.get(request_url, verify=False, allow_redirects=False)
+                    r = requests.get(request_url, verify=False, headers=headers, allow_redirects=False)
             
             status_code = r.status_code
             if status_code == 200:
@@ -237,8 +241,13 @@ def perform_unicode_bypass(url, path, user_method, args):
             print(f"{status_color}{user_method} {request_url}: {status_code}{RESET}")
 
 @rate_limit(rate_limit_value)
-def perform_user_agent_bypass(url, args):
+def perform_user_agent_bypass(url, args, custom_headers=None):
     print(f"{YELLOW}\n[INFO] Trying to bypass with User-Agent fuzzing...{RESET}")
+
+    headers = {}
+    if custom_headers is not None:
+        headers.update(custom_headers)
+
     if not url.startswith("http"):
         url = "http://" + url
 
@@ -246,7 +255,7 @@ def perform_user_agent_bypass(url, args):
         user_agents = file.read().splitlines()
 
     for user_agent in user_agents:
-        headers = {"User-Agent": user_agent}
+        headers["User-Agent"] = user_agent
         r = requests.get(url, headers=headers, verify=False, allow_redirects=False)
 
         if args.proxy:
@@ -386,10 +395,10 @@ def main():
             perform_protocol_bypass(url, user_method, args, custom_headers)
             
             if args.include_unicode:
-                perform_unicode_bypass(url, path, user_method, args)
+                perform_unicode_bypass(url, path, user_method, args, custom_headers)
 
             if args.include_user_agent:
-                perform_user_agent_bypass(url, args)
+                perform_user_agent_bypass(url, args, custom_headers)
 
             
             print(f"{GREEN}\n[+] Done. you may review the results{RESET}")
