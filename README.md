@@ -25,22 +25,28 @@ python3 forbidden_buster.py -u http://example.com
 Forbidden Buster accepts the following arguments:
 
 ```bash
--u, --url: Full path to be used. This argument is required.
--m, --method: Method to be used. The default is GET.
--a, --headers: Add custom headers.
--p, --proxy: Use a proxy.
---rate-limit: Set the rate limit (calls per second). The default rate limit is 10.
---include-unicode: Include Unicode bypass (stressful).
---include-user-agent: Include User-Agent bypass (stressful).
+  -h, --help            show this help message and exit
+  -u URL, --url URL     Full path to be used
+  -m METHOD, --method METHOD
+                        Method to be used. Default is GET
+  -H HEADER, --header HEADER
+                        Add a custom header
+  -d DATA, --data DATA  Add data to requset body. JSON is supported with escaping
+  -p PROXY, --proxy PROXY
+                        Use Proxy
+  --rate-limit RATE_LIMIT
+                        Rate limit (calls per second)
+  --include-unicode     Include Unicode fuzzing (stressful)
+  --include-user-agent  Include User-Agent fuzzing (stressful)
 ```
 
 Example Usage:
 ```bash
-python3 forbidden_buster.py -u http://example.com/secret --method POST --proxy http://proxy.example.com --rate-limit 5 --include-unicode --include-user-agent
+python3 forbidden_buster.py --url "http://example.com/secret" --method POST --header "Authorization: Bearer XXX" --data '{\"key\":\"value\"}' --proxy "http://proxy.example.com" --rate-limit 5 --include-unicode --include-user-agent
 ```
 
 ## Credits
 - **Hacktricks** - Special thanks for providing valuable techniques and insights used in this tool.
 - **SecLists** - Credit to danielmiessler's SecLists for providing the wordlists.
-
+- **kaimi** - Credit to kaimi's "Possible IP Bypass HTTP Headers" wordlist.
 
