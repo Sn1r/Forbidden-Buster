@@ -1,4 +1,3 @@
 requests
 argparse
-functools
 urllib3
