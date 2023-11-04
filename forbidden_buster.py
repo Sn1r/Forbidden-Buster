@@ -85,6 +85,16 @@ def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custo
 
             headers[header_key] = header_value
 
+            if "X-Original-URL" in headers or "X-Rewrite-URL" in headers:
+                parsed_url = requests.utils.urlparse(url)
+                url = requests.utils.urlunparse(parsed_url._replace(path="/"))
+
+                r = requests.request(user_method, url, headers=headers, data=data, verify=False, allow_redirects=False)
+                print(f"{YELLOW}[INFO] Changing path to '/' and setting header to the value of the original path...{RESET}")
+            else:
+                r = requests.request(user_method, url, headers=headers, data=data, verify=False, allow_redirects=False)
+
+
         if user_method == "POST":
             if data:
                 if is_json(data):
@@ -535,6 +545,14 @@ def main():
     try:
         with open('./wordlists/headers_bypass.txt') as f:
             headers_bypass = f.readlines()
+        
+        parsed_url = urlparse(args.url[0])
+        path = parsed_url.path
+        
+        headers_bypass.append(f"X-Original-URL: {path}")
+        headers_bypass.append(f"X-Rewrite-URL: {path}")
+
+        
 
         method_bypass = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "CONNECT", "TRACE", "OPTIONS", "INVENTED", "HACK"]
         
