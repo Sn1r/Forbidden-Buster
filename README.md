@@ -1,5 +1,7 @@
 ![image](https://github.com/Sn1r/Forbidden-Buster/assets/71400526/2ea8ba03-965c-4288-a3b8-ef6a6202f4a5)
 
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+
 Forbidden Buster is a tool designed to automate various techniques in order to bypass HTTP 401 and 403 response codes and gain access to unauthorized areas in the system. **This code is made for security enthusiasts and professionals only. Use it at your own risk.**
 
 ## Features
