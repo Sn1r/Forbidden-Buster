@@ -7,6 +7,10 @@ Forbidden Buster is a tool designed to automate various techniques in order to b
 - Probes HTTP 401 and 403 response codes to discover potential bypass techniques.
 - Utilizes various methods and headers to test and bypass access controls.
 - Customizable through command-line arguments.
+
+### Updates
+- Added API fuzzing methods, which probe for different API versions and also tamper with the data.
+- Removed rate limiting feature for now. Better implementation in the future.
   
 ## Installation & Usage
 Install requirements
@@ -34,15 +38,14 @@ Forbidden Buster accepts the following arguments:
   -d DATA, --data DATA  Add data to requset body. JSON is supported with escaping
   -p PROXY, --proxy PROXY
                         Use Proxy
-  --rate-limit RATE_LIMIT
-                        Rate limit (calls per second)
   --include-unicode     Include Unicode fuzzing (stressful)
   --include-user-agent  Include User-Agent fuzzing (stressful)
+  --include-api         Include API fuzzing
 ```
 
 Example Usage:
 ```bash
-python3 forbidden_buster.py --url "http://example.com/secret" --method POST --header "Authorization: Bearer XXX" --data '{\"key\":\"value\"}' --proxy "http://proxy.example.com" --rate-limit 5 --include-unicode --include-user-agent
+python3 forbidden_buster.py --url "https://example.com/api/v1/secret" --method POST --header "Authorization: Bearer XXX" --data '{\"key\":\"value\"}' --proxy "http://proxy.example.com" --include-api --include-unicode
 ```
 
 ## Credits
