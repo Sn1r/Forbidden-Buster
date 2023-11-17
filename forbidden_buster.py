@@ -2,6 +2,7 @@ import requests
 import argparse
 import json
 import ssl
+import re
 import time
 import http.client
 from urllib.parse import urlparse, urlunparse, urljoin, quote
@@ -19,30 +20,8 @@ BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 CYAN = "\033[36m"
 WHITE = "\033[37m"
+ORANGE = "\033[91m"
 
-rate_limit_value = 10
-
-def rate_limit(calls_per_second):
-    min_interval = 1.0 / calls_per_second
-    
-    def decorator(func):
-        last_time = [0.0]
-        
-        def wrapper(*args, **kwargs):
-            nonlocal last_time
-            elapsed_time = time.time() - last_time[0]
-            if elapsed_time < min_interval:
-                time.sleep(min_interval - elapsed_time)
-            result = func(*args, **kwargs)
-            last_time[0] = time.time()
-            return result
-
-        wrapper.__name__ = func.__name__
-        wrapper.__doc__ = func.__doc__
-
-        return wrapper
-
-    return decorator
 
 def print_banner():
     print("""
@@ -64,7 +43,6 @@ def is_json(data):
     except (ValueError, TypeError):
         return False
 
-@rate_limit(rate_limit_value)
 def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custom_data=None):
     print(f"{YELLOW}[INFO] Trying to bypass with headers...{RESET}")
 
@@ -90,7 +68,6 @@ def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custo
                 url = requests.utils.urlunparse(parsed_url._replace(path="/"))
 
                 r = requests.request(user_method, url, headers=headers, data=data, verify=False, allow_redirects=False)
-                print(f"{YELLOW}[INFO] Changing path to '/' and setting header to the value of the original path...{RESET}")
             else:
                 r = requests.request(user_method, url, headers=headers, data=data, verify=False, allow_redirects=False)
 
@@ -144,7 +121,6 @@ def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custo
 
 
         
-@rate_limit(rate_limit_value)
 def perform_method_bypass(url, args, headers_bypass, method_bypass, custom_headers=None, custom_data=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP methods...{RESET}")
 
@@ -226,7 +202,6 @@ def generate_path_variants(path):
 
     return paths
 
-@rate_limit(rate_limit_value)
 def perform_path_bypass(url, path, args, user_method, custom_headers=None, custom_data=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with path fuzzing...{RESET}")
 
@@ -290,7 +265,6 @@ def perform_path_bypass(url, path, args, user_method, custom_headers=None, custo
             status_color = RESET
         print(f"{status_color}{user_method} {request_url}: {r.status_code}{RESET}")
 
-@rate_limit(rate_limit_value)
 def perform_unicode_bypass(url, path, user_method, args, custom_headers=None, custom_data=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass path with unicode fuzzing...{RESET}")
 
@@ -362,7 +336,6 @@ def perform_unicode_bypass(url, path, user_method, args, custom_headers=None, cu
                 status_color = RESET
             print(f"{status_color}{user_method} {request_url}: {status_code}{RESET}")
 
-@rate_limit(rate_limit_value)
 def perform_user_agent_bypass(url, args, user_method, custom_headers=None, custom_data=None):
     print(f"{YELLOW}\n[INFO] Trying to bypass with User-Agent fuzzing...{RESET}")
 
@@ -426,7 +399,162 @@ def perform_user_agent_bypass(url, args, user_method, custom_headers=None, custo
             status_color = RESET
         print(f"{status_color}{user_method} User-Agent: {user_agent} - Status Code: {r.status_code}{RESET}")
 
-@rate_limit(rate_limit_value)
+
+def modify_api_data(json_data):
+
+    modified_data_first = {}
+    modified_data_second = {}
+
+    for key, value in json_data.items():
+        # {“id”:111} ---> {“id”:{“id”:111}}
+        modified_data_first[key] = {key: value}
+
+        # {“id”:111} ---> {“id”:[111]}
+        modified_data_second[key] = [value]
+
+    return modified_data_first, modified_data_second
+
+def perform_api_bypass(url, path, user_method, args, custom_headers=None, custom_data=None):
+    print(f"\n{YELLOW}[INFO] Trying to bypass with API fuzzing...{RESET}")
+
+    headers = {}
+    if custom_headers is not None:
+        headers.update(custom_headers)
+    
+    data = custom_data if custom_data is not None else {}
+
+    if "api/v" in path:
+        version_number = re.search(r'/v(\d+(\.\d+)*)/?', path)
+        if version_number:
+            current_version = version_number.group(1)
+            all_versions = ["1","2","3","4"]
+            
+            if current_version.endswith(".0"):
+                all_versions = [v + ".0" for v in all_versions]
+
+            other_versions = [v for v in all_versions if v != current_version]
+
+            parsed_url = urlparse(url)
+
+            for new_version in other_versions:
+                path, query = parsed_url.path, parsed_url.query
+
+                if current_version not in path:
+                    new_path = path + f"v{new_version}/"
+                else:
+                    new_path = path.replace(f"/v{current_version}/", f"/v{new_version}/")
+                
+                request_url = urljoin(url, new_path)
+
+                if query:
+                    request_url += f"?{query}"
+
+                if user_method == "POST":
+                    if data:
+                        if is_json(data):
+                            headers['Content-Type'] = 'application/json'
+                            r = requests.post(url, verify=False, json=data, headers=headers, allow_redirects=False)
+                        else:
+                            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                            r = requests.post(url, verify=False, data=data, headers=headers, allow_redirects=False)
+                    else:
+                        r = requests.post(url, verify=False, headers=headers, allow_redirects=False)
+
+                elif user_method == "PUT":
+                    if data:
+                        if is_json(data):
+                            headers['Content-Type'] = 'application/json'
+                            r = requests.put(url, verify=False, json=data, headers=headers, allow_redirects=False)
+                        else:
+                            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                            r = requests.put(url, verify=False, data=data, headers=headers, allow_redirects=False)
+                    else:
+                        r = requests.put(url, verify=False, headers=headers, allow_redirects=False)
+                elif user_method == "PATCH":
+                    if data:
+                        if is_json(data):
+                            headers['Content-Type'] = 'application/json'
+                            r = requests.put(url, verify=False, json=data, headers=headers, allow_redirects=False)
+                        else:
+                            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                            r = requests.put(url, verify=False, data=data, headers=headers, allow_redirects=False)
+                elif user_method == "DELETE":
+                    r = requests.delete(request_url, verify=False, headers=headers, data=data, allow_redirects=False)
+                else:
+                    r = requests.get(request_url, verify=False, headers=headers, data=data, allow_redirects=False)
+
+                if args.proxy:
+                    r = requests.request(user_method, request_url, headers=headers, data=data, proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
+                
+                status_code = r.status_code
+                if status_code == 200:
+                    status_color = GREEN
+                elif status_code in (401,403):
+                    status_color = RED
+                else:
+                    status_color = RESET
+                print(f"{status_color}{user_method} {request_url}: {status_code}{RESET}")
+    
+    if custom_data and is_json(custom_data):
+        try:
+            json_data = json.loads(custom_data)
+            modified_data = modify_api_data(json_data)
+            print(f"{YELLOW}[INFO] Trying to modify data: {modified_data[0]}{RESET}")
+
+            if user_method == "POST":
+                headers['Content-Type'] = 'application/json'
+                r = requests.post(url, verify=False, json=modified_data[0], headers=headers, allow_redirects=False)
+            elif user_method == "PUT":
+                headers['Content-Type'] = 'application/json'
+                r = requests.put(url, verify=False, json=modified_data[0], headers=headers, allow_redirects=False)
+            elif user_method == "PATCH":
+                headers['Content-Type'] = 'application/json'
+                r = requests.patch(url, verify=False, json=modified_data[0], headers=headers, allow_redirects=False)
+            elif user_method == "DELETE":
+                r = requests.delete(url, verify=False, headers=headers, json=modified_data[0], allow_redirects=False)
+
+            if args.proxy:
+                r = requests.request(user_method, url, headers=headers, json=modified_data[0], proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
+
+            status_code = r.status_code
+            if status_code == 200:
+                status_color = GREEN
+            elif status_code in (401, 403):
+                status_color = RED
+            else:
+                status_color = RESET
+            print(f"{status_color}{user_method} {url}: {status_code}{RESET}")
+
+            print(f"{YELLOW}[INFO] Trying to modify data: {modified_data[1]}{RESET}")
+
+            if user_method == "POST":
+                headers['Content-Type'] = 'application/json'
+                r = requests.post(url, verify=False, json=modified_data[1], headers=headers, allow_redirects=False)
+            elif user_method == "PUT":
+                headers['Content-Type'] = 'application/json'
+                r = requests.put(url, verify=False, json=modified_data[1], headers=headers, allow_redirects=False)
+            elif user_method == "PATCH":
+                headers['Content-Type'] = 'application/json'
+                r = requests.patch(url, verify=False, json=modified_data[1], headers=headers, allow_redirects=False)
+            elif user_method == "DELETE":
+                r = requests.delete(url, verify=False, headers=headers, json=modified_data[1], allow_redirects=False)
+
+            if args.proxy:
+                r = requests.request(user_method, url, headers=headers, json=modified_data[1], proxies={"http": args.proxy, "https": args.proxy}, verify=False, allow_redirects=False)
+
+            status_code = r.status_code
+            if status_code == 200:
+                status_color = GREEN
+            elif status_code in (401, 403):
+                status_color = RED
+            else:
+                status_color = RESET
+            print(f"{status_color}{user_method} {url}: {status_code}{RESET}")
+        
+        except json.JSONDecodeError:
+            print(f"\n{ORANGE}[WARNING] Unable to parse data as JSON. Skipping modification...{RESET}")
+
+
 def perform_protocol_bypass(url, user_method, args, custom_headers=None, custom_data=None):
     print(f"\n{YELLOW}[INFO] Trying to bypass with HTTP protocols...{RESET}")
 
@@ -517,14 +645,11 @@ def main():
     parser.add_argument("-H", "--header", action="append", help="Add a custom header")
     parser.add_argument("-d", "--data", help="Add data to requset body. JSON is supported with escaping")
     parser.add_argument("-p", "--proxy", help="Use Proxy")
-    parser.add_argument("--rate-limit", type=int, default=10, help="Rate limit (calls per second)")
     parser.add_argument("--include-unicode", action="store_true", help="Include Unicode fuzzing (stressful)")
     parser.add_argument("--include-user-agent", action="store_true", help="Include User-Agent fuzzing (stressful)")
+    parser.add_argument("--include-api", action="store_true", help="Include API fuzzing")
     
     args = parser.parse_args()
-
-    global rate_limit_value
-    rate_limit_value = args.rate_limit
 
     custom_headers = None
     custom_data = None
@@ -537,7 +662,7 @@ def main():
                 key, value = key_value
                 custom_headers[key.strip()] = value.strip()
             else:
-                print(f"\n{YELLOW}[WARNING] Invalid header format: {header}. Skipping...{RESET}\n")
+                print(f"\n{ORANGE}[WARNING] Invalid header format: {header}. Skipping...{RESET}\n")
     
     if args.data is not None:
         custom_data = args.data
@@ -552,8 +677,6 @@ def main():
         headers_bypass.append(f"X-Original-URL: {path}")
         headers_bypass.append(f"X-Rewrite-URL: {path}")
 
-        
-
         method_bypass = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "CONNECT", "TRACE", "OPTIONS", "INVENTED", "HACK"]
         
         if args.url:
@@ -564,7 +687,6 @@ def main():
             validate_result = validate_url(url)
             user_method = args.method if args.method else "GET"
             path = urlparse(url).path
-
             
             perform_headers_bypass(url, args, headers_bypass, custom_headers, custom_data)
             perform_method_bypass(url, args, headers_bypass, method_bypass, custom_headers, custom_data)
@@ -576,12 +698,15 @@ def main():
 
             if args.include_user_agent:
                 perform_user_agent_bypass(url, args, user_method, custom_headers, custom_data)
+            
+            if args.include_api:
+                perform_api_bypass(url, path, user_method, args, custom_headers, custom_data)
 
             
-            print(f"{GREEN}\n[+] Done. you may review the results{RESET}")
+            print(f"{GREEN}\n[+] Done.{RESET}")
 
     except KeyboardInterrupt:
-        print(f"\n{YELLOW}[WARNING] Stopping...{RESET}")
+        print(f"\n{ORANGE}[WARNING] Stopping...{RESET}")
     
     except ConnectionRefusedError:
         print(f"\n{RED}[ERROR] Connection refused{RESET}")
@@ -593,7 +718,7 @@ def main():
         print(f"\n{RED}[ERROR] SSL Error: \n{ssl_error}{RESET}")
     
     except ValueError:
-        print(f"\n{YELLOW}[WARNING] Please include a scheme (http:// or https://) inside the provided URL{RESET}")
+        print(f"\n{ORANGE}[WARNING] Please include a scheme (http:// or https://) inside the provided URL{RESET}")
     
     except requests.exceptions.ConnectionError as e:
         print(f"\n{RED}[ERROR] Connection Error: \n{e}{RESET}")
