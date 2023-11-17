@@ -8,7 +8,7 @@ Forbidden Buster is a tool designed to automate various techniques in order to b
 - Utilizes various methods and headers to test and bypass access controls.
 - Customizable through command-line arguments.
 
-### Updates
+### 🚀 Updates
 - Added API fuzzing methods, which probe for different API versions and also tamper with the data.
 - Removed rate limiting feature for now. Better implementation in the future.
   
