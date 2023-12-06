@@ -796,5 +796,5 @@ def initialize_bypass_procedures(args, custom_headers, custom_data):
 if __name__ == '__main__':
     print_banner()
     main()
-    print(f"{GREEN}[+] Done.{RESET}")
-    print(f"{GREEN}\n[+] Results saved in {outputPath}.{RESET}\n")
+    print(f"{GREEN}\n[+] Done.{RESET}")
+    print(f"{GREEN}[+] Results saved in {outputPath}.{RESET}\n")
