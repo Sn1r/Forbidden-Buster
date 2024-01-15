@@ -566,7 +566,7 @@ def perform_api_bypass(url, path, user_method, args, custom_headers=None, custom
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {url}: {status_color}{status_code}{RESET}")
-            print(f"[{current_time}] {user_method} {url}: {status_code}")
+            outputData.append(f"[{current_time}] {user_method} {url}: {status_code}")
 
         except json.JSONDecodeError:
             print(f"\n{ORANGE}[WARNING]{RESET} Unable to parse data as JSON. Skipping modification...")
@@ -643,7 +643,7 @@ def perform_protocol_bypass(url, user_method, args, custom_headers=None, custom_
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{version} {user_method} {url}: {status_color}{response.status}{RESET}")
-            print(f"[[{current_time}] {version} {user_method} {url}: {response.status}")
+            outputData.append(f"[{current_time}] {version} {user_method} {url}: {response.status}")
 
         except http.client.BadStatusLine as e:
             print(f"{RED}[ERROR]{RESET} Bad Status Line: {e}")
