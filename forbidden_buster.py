@@ -3,6 +3,7 @@ import http.client
 import json
 import re
 import ssl
+import os
 from urllib.parse import urlparse, urlunparse, urljoin, quote
 
 import requests
@@ -24,7 +25,7 @@ def is_json(data):
 
 
 def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custom_data=None):
-    print(f"{YELLOW}[INFO]{RESET} Trying to bypass with HTTP headers...")
+    print(f"\n{YELLOW}[INFO]{RESET} Trying to bypass with HTTP headers...")
 
     user_method = args.method.upper() if args.method else "GET"
     data = custom_data if custom_data is not None else {}
@@ -95,6 +96,7 @@ def perform_headers_bypass(url, args, headers_bypass, custom_headers=None, custo
         else:
             status_color = RESET
         print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {url} with header {header_key}: {status_color}{status_code}{RESET}")
+        outputData.append(f"[{current_time}] {user_method} {url} with header {header_key}: {status_code}")
 
 
 def perform_method_bypass(url, args, headers_bypass, method_bypass, custom_headers=None, custom_data=None):
@@ -163,6 +165,7 @@ def perform_method_bypass(url, args, headers_bypass, method_bypass, custom_heade
         else:
             status_color = RESET
         print(f"{TURQUOISE}[{current_time}] {RESET}{method} {url}: {status_color}{status_code}{RESET}")
+        outputData.append(f"[{current_time}] {method} {url}: {status_code}")
 
 
 def generate_path_variants(path):
@@ -246,6 +249,7 @@ def perform_path_bypass(url, path, args, user_method, custom_headers=None, custo
         else:
             status_color = RESET
         print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {request_url}: {status_color}{r.status_code}{RESET}")
+        outputData.append(f"[{current_time}] {user_method} {request_url}: {r.status_code}")
 
 
 def perform_unicode_bypass(url, path, user_method, args, custom_headers=None, custom_data=None):
@@ -324,6 +328,7 @@ def perform_unicode_bypass(url, path, user_method, args, custom_headers=None, cu
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {request_url}: {status_color}{status_code}{RESET}")
+            outputData.append(f"[{current_time}] {user_method} {request_url}: {status_code}")
 
 
 def perform_user_agent_bypass(url, args, user_method, custom_headers=None, custom_data=None):
@@ -392,6 +397,8 @@ def perform_user_agent_bypass(url, args, user_method, custom_headers=None, custo
         else:
             status_color = RESET
         print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} User-Agent: {user_agent} - Status Code: {status_color}{r.status_code}{RESET}")
+        outputData.append(f"[{current_time}] {user_method} User-Agent: {user_agent} - Status Code: {r.status_code}")
+
 
 
 def modify_api_data(json_data):
@@ -493,6 +500,7 @@ def perform_api_bypass(url, path, user_method, args, custom_headers=None, custom
                 else:
                     status_color = RESET
                 print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {request_url}: {status_color}{status_code}{RESET}")
+                outputData.append(f"[{current_time}] {user_method} {request_url}: {status_code}")
 
     if custom_data and is_json(custom_data):
         try:
@@ -527,6 +535,7 @@ def perform_api_bypass(url, path, user_method, args, custom_headers=None, custom
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {url}: {status_color}{status_code}{RESET}")
+            outputData.append(f"[{current_time}] {user_method} {url}: {status_code}")
 
             print(f"{YELLOW}[INFO]{RESET} Trying to modify data: {modified_data[1]}")
 
@@ -557,6 +566,7 @@ def perform_api_bypass(url, path, user_method, args, custom_headers=None, custom
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{user_method} {url}: {status_color}{status_code}{RESET}")
+            outputData.append(f"[{current_time}] {user_method} {url}: {status_code}")
 
         except json.JSONDecodeError:
             print(f"\n{ORANGE}[WARNING]{RESET} Unable to parse data as JSON. Skipping modification...")
@@ -633,6 +643,7 @@ def perform_protocol_bypass(url, user_method, args, custom_headers=None, custom_
             else:
                 status_color = RESET
             print(f"{TURQUOISE}[{current_time}] {RESET}{version} {user_method} {url}: {status_color}{response.status}{RESET}")
+            outputData.append(f"[{current_time}] {version} {user_method} {url}: {response.status}")
 
         except http.client.BadStatusLine as e:
             print(f"{RED}[ERROR]{RESET} Bad Status Line: {e}")
@@ -653,16 +664,33 @@ def validate_url(url):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--url", help="Full path to be used", required=True, nargs=1)
-    parser.add_argument("-m", "--method", help="Method to be used. Default is GET")
-    parser.add_argument("-H", "--header", action="append", help="Add a custom header")
-    parser.add_argument("-d", "--data", help="Add data to requset body. JSON is supported with escaping")
-    parser.add_argument("-p", "--proxy", help="Use Proxy")
-    parser.add_argument("--include-unicode", action="store_true", help="Include Unicode fuzzing (stressful)")
-    parser.add_argument("--include-user-agent", action="store_true", help="Include User-Agent fuzzing (stressful)")
-    parser.add_argument("--include-api", action="store_true", help="Include API fuzzing")
+    parser.add_argument("-u", "--url", help="Full path to be used", nargs=1)
+    parser.add_argument("-f", "--file", help="Include a file with multiple URLs to be tested.", default=False)
+    parser.add_argument("-o", "--output", help="Print the results to an output file, Usage i.e: output.txt.", default=False)
+    parser.add_argument("-m", "--method", help="Method to be used. Default is GET.")
+    parser.add_argument("-H", "--header", action="append", help="Add a custom header.")
+    parser.add_argument("-d", "--data", help="Add data to requset body. JSON is supported with escaping.")
+    parser.add_argument("-p", "--proxy", help="Use Proxy, Usage i.e: 127.0.0.1:8080.")
+    parser.add_argument("--include-unicode", action="store_true", help="Include Unicode fuzzing (stressful).")
+    parser.add_argument("--include-user-agent", action="store_true", help="Include User-Agent fuzzing (stressful).")
+    parser.add_argument("--include-api", action="store_true", help="Include API fuzzing.")
 
     args = parser.parse_args()
+
+    global outputFile
+    global outputData
+    global outputPath
+
+    outputData = []
+
+    if args.output:
+        outputFile = args.output
+    else:
+        currentPath = os.getcwd()
+        fileName = "results.txt"
+        outputFile = os.path.join(currentPath, fileName)
+
+    outputPath = outputFile
 
     custom_headers = None
     if args.header is not None:
@@ -700,12 +728,11 @@ def main():
         print(f"\n{RED}[ERROR]{RESET} Request Error: \n{e}")
 
 
-def execute_bypass_tests(args, headers_bypass, custom_headers, custom_data):
-    url = args.url[0]
+def execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data):
+    
     if not url.startswith('http://') and not url.startswith('https://'):
         url = f'http://{url}'
 
-    validate_result = validate_url(url)
     user_method = args.method or "GET"
     path = urlparse(url).path
 
@@ -725,24 +752,49 @@ def execute_bypass_tests(args, headers_bypass, custom_headers, custom_data):
 
     if args.include_api:
         perform_api_bypass(url, path, user_method, args, custom_headers, custom_data)
+    
+    if outputFile.count("/") < 2 or outputFile.count("\\") < 2:
+        currentPath = os.getcwd()
+        outputPath = os.path.join(currentPath, outputFile)
+    else:
+        outputPath = outputFile
+    
+    if args.file:
+        file = open(outputPath, "a")
+        for data in outputData:
+            file.write(f"{data}\n")
+        file.close()
 
-    print(f"{GREEN}\n[+] Done.{RESET}")
-
+    else:
+        file = open(outputPath, "w")
+        for data in outputData:
+            file.write(f"{data}\n")
+        file.close()
+    
 
 def initialize_bypass_procedures(args, custom_headers, custom_data):
     with open('./wordlists/headers_bypass.txt') as f:
         headers_bypass = f.readlines()
+    
+    if args.url and not args.file:
+        url = args.url[0]
+        execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data)
+    else:
+        with open(args.file, encoding="latin-1") as file:
+            lines = file.readlines()
+            for url in lines:
+                if not url.endswith("/"):
+                    url = url.rstrip() + "/"
+                execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data)
 
-    parsed_url = urlparse(args.url[0])
+    parsed_url = urlparse(url)
     path = parsed_url.path
 
     headers_bypass.append(f"X-Original-URL: {path}")
     headers_bypass.append(f"X-Rewrite-URL: {path}")
 
-    if args.url:
-        execute_bypass_tests(args, headers_bypass, custom_headers, custom_data)
-
-
 if __name__ == '__main__':
     print_banner()
     main()
+    print(f"{GREEN}\n[+] Done.{RESET}")
+    print(f"{GREEN}[+] Results saved in {outputPath}.{RESET}\n")
