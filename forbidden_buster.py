@@ -5,6 +5,7 @@ import re
 import ssl
 import os
 from urllib.parse import urlparse, urlunparse, urljoin, quote
+import time
 
 import requests
 import urllib3
@@ -664,7 +665,7 @@ def validate_url(url):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--url", help="Full path to be used", nargs=1)
+    parser.add_argument("-u", "--url", help="Full path to be used", nargs=1, required=True)
     parser.add_argument("-f", "--file", help="Include a file with multiple URLs to be tested.", default=False)
     parser.add_argument("-o", "--output", help="Print the results to an output file, Usage i.e: output.txt.", default=False)
     parser.add_argument("-m", "--method", help="Method to be used. Default is GET.")
@@ -679,18 +680,16 @@ def main():
 
     global outputFile
     global outputData
-    global outputPath
 
     outputData = []
 
+    should_write_output = False
+
     if args.output:
         outputFile = args.output
+        should_write_output = True
     else:
-        currentPath = os.getcwd()
-        fileName = "results.txt"
-        outputFile = os.path.join(currentPath, fileName)
-
-    outputPath = outputFile
+        outputFile = None
 
     custom_headers = None
     if args.header is not None:
@@ -705,7 +704,7 @@ def main():
 
     custom_data = args.data if args.data is not None else None
     try:
-        initialize_bypass_procedures(args, custom_headers, custom_data)
+        initialize_bypass_procedures(args, custom_headers, custom_data, should_write_output, outputFile)
     except KeyboardInterrupt:
         print(f"\n{ORANGE}[WARNING]{RESET} Stopping...")
 
@@ -726,9 +725,16 @@ def main():
 
     except requests.exceptions.RequestException as e:
         print(f"\n{RED}[ERROR]{RESET} Request Error: \n{e}")
+    
+    if should_write_output:
+        with open(outputFile, "w") as file:
+            for data in outputData:
+                file.write(f"{data}\n")
+    
+    return outputFile
 
 
-def execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data):
+def execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data, should_write_output, outputFile):
     
     if not url.startswith('http://') and not url.startswith('https://'):
         url = f'http://{url}'
@@ -752,40 +758,23 @@ def execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data)
 
     if args.include_api:
         perform_api_bypass(url, path, user_method, args, custom_headers, custom_data)
-    
-    if outputFile.count("/") < 2 or outputFile.count("\\") < 2:
-        currentPath = os.getcwd()
-        outputPath = os.path.join(currentPath, outputFile)
-    else:
-        outputPath = outputFile
-    
-    if args.file:
-        file = open(outputPath, "a")
-        for data in outputData:
-            file.write(f"{data}\n")
-        file.close()
 
-    else:
-        file = open(outputPath, "w")
-        for data in outputData:
-            file.write(f"{data}\n")
-        file.close()
     
 
-def initialize_bypass_procedures(args, custom_headers, custom_data):
+def initialize_bypass_procedures(args, custom_headers, custom_data, should_write_output, outputFile):
     with open('./wordlists/headers_bypass.txt') as f:
         headers_bypass = f.readlines()
     
     if args.url and not args.file:
         url = args.url[0]
-        execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data)
+        execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data, should_write_output, outputFile)
     else:
         with open(args.file, encoding="latin-1") as file:
             lines = file.readlines()
             for url in lines:
                 if not url.endswith("/"):
                     url = url.rstrip() + "/"
-                execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data)
+                execute_bypass_tests(url, args, headers_bypass, custom_headers, custom_data, outputFile)
 
     parsed_url = urlparse(url)
     path = parsed_url.path
@@ -795,6 +784,7 @@ def initialize_bypass_procedures(args, custom_headers, custom_data):
 
 if __name__ == '__main__':
     print_banner()
-    main()
+    outputFile = main()
+    if outputFile:
+        print(f"{GREEN}\n[+] Results saved in {outputFile}.{RESET}")
     print(f"{GREEN}\n[+] Done.{RESET}")
-    print(f"{GREEN}[+] Results saved in {outputPath}.{RESET}\n")
