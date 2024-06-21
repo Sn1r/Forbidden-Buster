@@ -34,16 +34,19 @@ Forbidden Buster accepts the following arguments:
 ```bash
   -h, --help            show this help message and exit
   -u URL, --url URL     Full path to be used
+  -f FILE, --file FILE  Include a file with multiple URLs to be tested.
+  -o OUTPUT, --output OUTPUT
+                        Print the results to an output file, Usage i.e: output.txt.
   -m METHOD, --method METHOD
-                        Method to be used. Default is GET
+                        Method to be used. Default is GET.
   -H HEADER, --header HEADER
-                        Add a custom header
-  -d DATA, --data DATA  Add data to requset body. JSON is supported with escaping
+                        Add a custom header.
+  -d DATA, --data DATA  Add data to requset body. JSON is supported with escaping.
   -p PROXY, --proxy PROXY
-                        Use Proxy
-  --include-unicode     Include Unicode fuzzing (stressful)
-  --include-user-agent  Include User-Agent fuzzing (stressful)
-  --include-api         Include API fuzzing
+                        Use Proxy, Usage i.e: 127.0.0.1:8080.
+  --include-unicode     Include Unicode fuzzing (stressful).
+  --include-user-agent  Include User-Agent fuzzing (stressful).
+  --include-api         Include API fuzzing.
 ```
 
 Example Usage:
