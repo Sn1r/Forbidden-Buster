@@ -29,7 +29,7 @@ python3 forbidden_buster.py -u http://example.com
 ```
 
 ### Using Docker
-You can also use Docker to run Forbidden-Buster. This approach ensures that you have a consistent environment without needing to install Go on your host machine.
+You can also use Docker to run Forbidden-Buster. This approach ensures that you have a consistent environment without needing to install Python on your host machine.
 
 #### Building the Docker Image
 First, build the Docker image:
