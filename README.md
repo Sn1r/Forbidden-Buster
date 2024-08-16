@@ -28,6 +28,28 @@ Run the script
 python3 forbidden_buster.py -u http://example.com
 ```
 
+### Using Docker
+You can also use Docker to run Forbidden-Buster. This approach ensures that you have a consistent environment without needing to install Go on your host machine.
+
+#### Building the Docker Image
+First, build the Docker image:
+
+```bash
+docker build -t Forbidden-Buster-image .
+```
+
+#### Running the Docker Container
+Next, run the Docker container. You need to pass a folder containing the files to analyze as a volume:
+
+```bash
+docker run --rm -it -v /path/to/your/folder:/app Forbidden-Buster-image /bin/bash
+```
+
+Inside the container, navigate to the /app directory and run your analysis using Forbidden-Buster command as normal.
+
+> [!NOTE]  
+> Make sure to replace /path/to/your/folder with the actual path to the folder containing the files you want to analyze. This command mounts your local folder into the /app directory inside the container, allowing you to run the Forbidden-Buster command on your files.
+
 ## Arguments
 Forbidden Buster accepts the following arguments:
 
