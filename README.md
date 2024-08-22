@@ -39,16 +39,18 @@ docker build -t forbidden-buster-image .
 ```
 
 #### Running the Docker Container
-Next, run the Docker container. You need to pass a folder containing the files to analyze as a volume:
+Next, run the Docker container. Pass the `forbidden_buster.py` script to the container.
 
 ```bash
-docker run --rm -it -v /path/to/your/folder:/app forbidden-buster-image /bin/bash
+docker run --rm -it -v /path/to/forbidden_buster.py:/app/forbidden_buster.py forbidden-buster-image /bin/bash
 ```
 
-Inside the container, navigate to the /app directory and run your analysis using Forbidden-Buster command as normal.
-
 > [!NOTE]  
-> Make sure to replace /path/to/your/folder with the actual path to the folder containing the files you want to analyze. This command mounts your local folder into the /app directory inside the container, allowing you to run the Forbidden-Buster command on your files.
+> Make sure to replace `/path/to/forbidden_buster.py` with the actual path to your `forbidden_buster.py` file. This command mounts your local file into the `/app` directory inside the container, allowing you to run the `forbidden_buster.py` script directly.
+
+
+
+Inside the container, navigate to the `/app` directory and run the script as normal.
 
 ## Arguments
 Forbidden Buster accepts the following arguments:
